@@ -1,6 +1,18 @@
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
-    let dot: f32 = a.iter().zip(b).map(|(x, y)| x * y).sum();
-    let mag_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
-    let mag_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
-    dot / (mag_a * mag_b + 1e-10)
+    let mut dot = 0.0;
+    let mut norm_a = 0.0;
+    let mut norm_b = 0.0;
+
+    for (x, y) in a.iter().zip(b.iter()) {
+        dot += x * y;
+        norm_a += x * x;
+        norm_b += y * y;
+    }
+
+    let denom = norm_a.sqrt() * norm_b.sqrt();
+    if denom == 0.0 {
+        return 0.0;
+    }
+
+    dot / denom
 }

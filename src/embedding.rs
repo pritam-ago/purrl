@@ -1,12 +1,5 @@
 use reqwest::blocking::Client;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
-
-/// Response shape from Ollama embedding API
-#[derive(Debug, Serialize, Deserialize)]
-pub struct EmbeddingResponse {
-    pub embedding: Vec<f32>,
-}
 
 /// Generate embedding for some text
 pub fn embed_text(text: &str) -> anyhow::Result<Vec<f32>> {

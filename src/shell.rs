@@ -4,6 +4,7 @@ use crate::search::search_files;
 use std::path::PathBuf;
 use crate::ai::interpret_command;
 use crate::engine::execute_action;
+use crate::indexer::run_indexer;
 
 
 fn clear_terminal() {
@@ -60,14 +61,27 @@ pub fn run_shell() -> Result<()> {
                     continue;
                 }
 
+                // INDEX COMMAND
+                if input.eq_ignore_ascii_case("index") || input.eq_ignore_ascii_case("reindex") {
+                    println!("📚 Building semantic index…");
+                    match run_indexer() {
+                        Ok(_) => println!("✅ Indexing finished.\n"),
+                        Err(e) => println!("❌ Indexing failed: {e}"),
+                    }
+                    continue;
+                }
+
+
                 if input.starts_with("ai ") {
                     let query = input.replace("ai ", "");
 
                     match interpret_command(&query) {
                         Ok(action) => {
                             println!("🤖 AI interpreted:\n{:#?}", action);
-                            execute_action(action);
-                            // Next: execute based on intent
+                            match execute_action(action) {
+                                Ok(_) => {},
+                                Err(e) => println!("❌ Action execution failed: {e}"),
+                            }
                         }
                         Err(err) => {
                             println!("❌ AI Error: {err}");

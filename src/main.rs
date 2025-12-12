@@ -5,6 +5,8 @@ mod engine;
 mod embedding;
 mod vector_db;
 mod similarity;
+mod indexer;
+
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -34,6 +36,7 @@ enum Commands {
         #[arg(default_value = "human")]
         name: String,
     },
+    Index,
 }
 
 fn main() -> Result<()> {
@@ -46,6 +49,9 @@ fn main() -> Result<()> {
         }
         Some(Commands::Hello { name }) => {
             println!("😺 Meow, {name}!");
+        }
+        Some(Commands::Index) => {
+            indexer::run_indexer()?;
         }
     }
 
