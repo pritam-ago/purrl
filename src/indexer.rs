@@ -2,8 +2,8 @@ use crate::embedding::embed_text;
 use crate::vector_db::VectorDB;
 use chrono::Local;
 use std::fs;
-use std::io::Read;
 use std::path::{Path, PathBuf};
+
 
 pub fn run_indexer() -> anyhow::Result<()> {
     println!("📚 Meow indexer started…");
@@ -76,26 +76,62 @@ fn index_file(db: &VectorDB, path: &Path) -> anyhow::Result<()> {
 }
 
 fn build_representation(path: &Path) -> anyhow::Result<String> {
-    let mut repr = format!(
-        "File name: {}. Full path: {}. ",
-        path.file_name().and_then(|n| n.to_str()).unwrap_or(""),
-        path.display()
-    );
+    let file_name = path
+        .file_stem()
+        .and_then(|n| n.to_str())
+        .unwrap_or("")
+        .replace(['_', '-', '.'], " ");
 
-    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
 
-    let is_text = matches!(
-        ext,
-        "txt" | "md" | "json" | "log" | "rs" | "js" | "ts"
-    );
+    let folder = path
+        .parent()
+        .and_then(|p| p.file_name())
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
 
-    if is_text {
-        if let Ok(mut f) = fs::File::open(path) {
-            let mut buf = String::new();
-            f.by_ref().take(8 * 1024).read_to_string(&mut buf).ok();
-            repr.push_str(&buf);
+    let mut text = String::new();
+
+    // Base semantic description
+    text.push_str(&format!(
+        "This is a {} file named {} located in {} folder. ",
+        ext, file_name, folder
+    ));
+
+    // Add semantic hints by file type
+    match ext.as_str() {
+        "png" | "jpg" | "jpeg" | "webp" => {
+            text.push_str("This file is an image or photo. ");
+            if file_name.contains("logo") {
+                text.push_str("It is likely a logo image. ");
+            }
+            if file_name.contains("screenshot") {
+                text.push_str("It may be a screenshot. ");
+            }
+            if file_name.contains("icon") {
+                text.push_str("It may be an icon or logo. ");
+            }
         }
+
+        "pdf" => {
+            text.push_str("This file is a PDF document. ");
+        }
+
+        "txt" | "md" => {
+            text.push_str("This file is a text document. ");
+        }
+
+        "exe" | "msi" => {
+            text.push_str("This file is an installer or application. ");
+        }
+
+        _ => {}
     }
 
-    Ok(repr)
+    Ok(text)
 }
+

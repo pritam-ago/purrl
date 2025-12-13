@@ -71,6 +71,8 @@ fn execute_search(action: AiAction) -> anyhow::Result<()> {
 
     println!("📦 Loading file embeddings...");
     let vectors = db.load_all()?; // (path, vec)
+    println!("📦 Loaded {} vectors from DB", vectors.len());
+
 
     let mut scored: Vec<(String, f32)> = vectors
         .into_iter()
