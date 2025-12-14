@@ -6,7 +6,7 @@ mod embedding;
 mod vector_db;
 mod similarity;
 mod indexer;
-
+mod types;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
