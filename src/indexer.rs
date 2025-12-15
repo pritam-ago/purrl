@@ -3,6 +3,7 @@ use crate::vector_db::VectorDB;
 use chrono::Local;
 use std::fs;
 use std::path::{Path, PathBuf};
+use indicatif::{ProgressBar, ProgressStyle};
 
 
 pub fn run_indexer() -> anyhow::Result<()> {
@@ -34,14 +35,32 @@ pub fn run_indexer() -> anyhow::Result<()> {
 
     println!("📁 Found {} files.", files.len());
 
-    let mut indexed = 0;
+    let total = files.len() as u64;
+
+    let pb = ProgressBar::new(total);
+    pb.set_style(
+        ProgressStyle::with_template(
+            "{spinner:.green} Indexing: [{bar:40.cyan/blue}] {pos}/{len} ({percent}%)",
+        )
+        .unwrap()
+        .progress_chars("█░"),
+    );
+
+    let mut indexed = 0usize;
+
     for path in files {
         if let Err(e) = index_file(&db, &path) {
-            eprintln!("⚠️ Skipped {}: {}", path.display(), e);
+            eprintln!("\n⚠️ Skipped {}: {}", path.display(), e);
+            pb.inc(1);
             continue;
         }
+
         indexed += 1;
+        pb.inc(1);
     }
+
+    pb.finish_with_message("Indexing complete");
+
 
     println!("✅ Indexed {} files.", indexed);
     Ok(())

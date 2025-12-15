@@ -1,5 +1,4 @@
 mod shell;
-mod search;
 mod ai;
 mod engine;
 mod embedding;
