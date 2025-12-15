@@ -8,6 +8,22 @@ use crate::types::SearchResults;
 
 use std::process::Command;
 
+fn print_banner() {
+    println!(
+        r#"
+              /\_/\  
+             ( o o )  
+    ┌───oOO───(___)───OOo───┐
+    │                       │
+    │        meow-cli       │
+    │      welcomes you     │
+    │                       │
+    └───oOO────────────OOo──┘
+"#
+    );
+}
+
+
 fn open_path(path: &str) -> Result<()> {
     #[cfg(target_os = "windows")]
     {
@@ -48,7 +64,7 @@ pub fn run_shell() -> Result<()> {
     let mut last_results: Option<SearchResults> = None;
     let mut rl = DefaultEditor::new()?;
 
-    println!("🐱  Meow shell activated.");
+    print_banner();
     println!("Type 'exit' or 'quit' to leave.\n");
 
     loop {
@@ -65,23 +81,23 @@ pub fn run_shell() -> Result<()> {
 
                 // Exit
                 if input.eq_ignore_ascii_case("exit") || input.eq_ignore_ascii_case("quit") {
-                    println!("👋 Bye, human.");
+                    println!("Bye, human.");
                     break;
                 }
 
                 // Clear
                 if matches!(input, "clear" | "cls" | "clean") {
                     clear_terminal();
-                    println!("🐱  Meow shell refreshed.\n");
+                    println!("Meow shell refreshed.\n");
                     continue;
                 }
 
                 // Index
                 if matches!(input, "index" | "reindex") {
-                    println!("📚 Building semantic index…");
+                    println!("Building semantic index…");
                     match run_indexer() {
-                        Ok(_) => println!("✅ Indexing finished.\n"),
-                        Err(e) => println!("❌ Indexing failed: {e}"),
+                        Ok(_) => println!("Indexing finished.\n"),
+                        Err(e) => println!("Indexing failed: {e}"),
                     }
                     continue;
                 }
@@ -92,13 +108,13 @@ pub fn run_shell() -> Result<()> {
 
                     if let Ok(n) = arg.parse::<usize>() {
                         let Some(results) = &last_results else {
-                            println!("❌ No previous results. Run a search first.");
+                            println!("No previous results. Run a search first.");
                             continue;
                         };
 
                         if n == 0 || n > results.items.len() {
                             println!(
-                                "❌ Invalid index. Choose 1..{}",
+                                "Invalid index. Choose 1..{}",
                                 results.items.len()
                             );
                             continue;
@@ -106,9 +122,9 @@ pub fn run_shell() -> Result<()> {
 
                         let path = &results.items[n - 1];
                         open_path(path)?;
-                        println!("✅ Opened: {}", path);
+                        println!("Opened: {}", path);
                     } else {
-                        println!("❌ Usage: open <number>");
+                        println!("Usage: open <number>");
                     }
 
                     continue;
@@ -120,7 +136,7 @@ pub fn run_shell() -> Result<()> {
 
                     match interpret_command(&query) {
                         Ok(action) => {
-                            println!("🤖 AI interpreted:\n{:#?}", action);
+                            println!("AI interpreted:\n{:#?}", action);
 
                             match execute_action(action) {
                                 Ok(Some(results)) => {
@@ -128,28 +144,28 @@ pub fn run_shell() -> Result<()> {
                                 }
                                 Ok(None) => {}
                                 Err(e) => {
-                                    println!("❌ Action execution failed: {e}");
+                                    println!("Action execution failed: {e}");
                                 }
                             }
                         }
                         Err(err) => {
-                            println!("❌ AI Error: {err}");
+                            println!("AI Error: {err}");
                         }
                     }
 
                     continue;
                 }
 
-                println!("❓ Unknown command. Try `ai find ...`, `index`, `open <n>`");
+                println!("Unknown command. Try `ai find ...`, `index`, `open <n>`");
             }
 
             Err(ReadlineError::Interrupted) => {
-                println!("\n(Interrupted) Bye 🐾");
+                println!("\n(Interrupted) Bye ");
                 break;
             }
 
             Err(ReadlineError::Eof) => {
-                println!("\n(EOF) Bye 🐾");
+                println!("\n(EOF) Bye ");
                 break;
             }
 

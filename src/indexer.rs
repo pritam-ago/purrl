@@ -7,7 +7,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 
 pub fn run_indexer() -> anyhow::Result<()> {
-    println!("📚 Meow indexer started…");
+    println!("Meow indexer started…");
 
     let mut roots = Vec::new();
 
@@ -33,7 +33,7 @@ pub fn run_indexer() -> anyhow::Result<()> {
         collect_files(root, &mut files);
     }
 
-    println!("📁 Found {} files.", files.len());
+    println!("Found {} files.", files.len());
 
     let total = files.len() as u64;
 
@@ -50,7 +50,7 @@ pub fn run_indexer() -> anyhow::Result<()> {
 
     for path in files {
         if let Err(e) = index_file(&db, &path) {
-            eprintln!("\n⚠️ Skipped {}: {}", path.display(), e);
+            eprintln!("\nSkipped {}: {}", path.display(), e);
             pb.inc(1);
             continue;
         }
@@ -62,7 +62,7 @@ pub fn run_indexer() -> anyhow::Result<()> {
     pb.finish_with_message("Indexing complete");
 
 
-    println!("✅ Indexed {} files.", indexed);
+    println!("Indexed {} files.", indexed);
     Ok(())
 }
 

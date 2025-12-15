@@ -31,20 +31,20 @@ pub fn execute_action(action: AiAction) -> anyhow::Result<Option<SearchResults>>
             Ok(None)
         }
         _ => {
-            println!("❌ Unknown intent: {}", action.intent);
+            println!("Unknown intent: {}", action.intent);
             Ok(None)
         }
     }
 }
 
 fn execute_search(action: AiAction) -> anyhow::Result<SearchResults> {
-    println!("🔍 Executing AI search...");
+    println!("Executing AI search...");
 
     // guard
     let raw_query = match &action.query {
         Some(q) if !q.trim().is_empty() => q.as_str(),
         _ => {
-            println!("❌ Cannot search without a query.");
+            println!("Cannot search without a query.");
             return Ok(SearchResults { items: vec![] });
         }
     };
@@ -59,7 +59,7 @@ fn execute_search(action: AiAction) -> anyhow::Result<SearchResults> {
 
     // root selection (you currently infer Pictures/Downloads etc.)
     let root = resolve_folder_hint(&action.folder_hint, &action.query);
-    println!("📁 Searching in: {}", root.display());
+    println!("Searching in: {}", root.display());
 
     // Walk filesystem (used for time filter; semantic matches will come from DB)
     let mut files = Vec::new();
@@ -73,12 +73,12 @@ fn execute_search(action: AiAction) -> anyhow::Result<SearchResults> {
     // --- semantic ---
     let db = VectorDB::new("meow_vectors.db")?;
 
-    println!("🧠 Generating query embedding...");
+    println!("Generating query embedding...");
     let query_vec = embed_text(&final_query)?;
 
-    println!("📦 Loading file embeddings...");
+    println!("Loading file embeddings...");
     let mut vectors = db.load_all()?;
-    println!("📦 Loaded {} vectors from DB", vectors.len());
+    println!("Loaded {} vectors from DB", vectors.len());
 
     // IMPORTANT: if you want semantic to respect the chosen root/time-filter,
     // filter DB vectors to only those file paths in `files`.
@@ -106,7 +106,7 @@ fn execute_search(action: AiAction) -> anyhow::Result<SearchResults> {
     // top 10
     let top = scored.into_iter().take(10).collect::<Vec<_>>();
 
-    println!("\n😼 Top matches:");
+    println!("\nTop matches:");
     let mut items = Vec::new();
     for (i, (path, score)) in top.iter().enumerate() {
         println!("[{}] {:.4} → {}", i + 1, score, path);

@@ -47,7 +47,7 @@ fn main() -> Result<()> {
             shell::run_shell()?;
         }
         Some(Commands::Hello { name }) => {
-            println!("😺 Meow, {name}!");
+            println!("Meow, {name}!");
         }
         Some(Commands::Index) => {
             indexer::run_indexer()?;
