@@ -3,6 +3,8 @@ use crate::embedding::embed_text;
 use crate::similarity::cosine_similarity;
 use crate::types::SearchResults;
 use crate::vector_db::VectorDB;
+use crate::ai_decider::{decide_best, Candidate};
+
 
 use chrono::{Duration, Local};
 use std::fs;
@@ -10,7 +12,7 @@ use std::path::{Path, PathBuf};
 
 pub fn execute_action(action: AiAction) -> anyhow::Result<Option<SearchResults>> {
     match action.intent.as_str() {
-        "search" => {
+        "search" | "find" => {
             let res = execute_search(action)?;
             Ok(Some(res))
         }
@@ -40,7 +42,7 @@ pub fn execute_action(action: AiAction) -> anyhow::Result<Option<SearchResults>>
 fn execute_search(action: AiAction) -> anyhow::Result<SearchResults> {
     println!("Executing AI search...");
 
-    // guard
+    // ---- Guard: query must exist ----
     let raw_query = match &action.query {
         Some(q) if !q.trim().is_empty() => q.as_str(),
         _ => {
@@ -49,7 +51,7 @@ fn execute_search(action: AiAction) -> anyhow::Result<SearchResults> {
         }
     };
 
-    // (optional) cleaned query for embeddings
+    // Cleaned query for embeddings
     let cleaned = clean_query(raw_query);
     let final_query = if cleaned.trim().is_empty() {
         raw_query.to_string()
@@ -57,20 +59,19 @@ fn execute_search(action: AiAction) -> anyhow::Result<SearchResults> {
         cleaned
     };
 
-    // root selection (you currently infer Pictures/Downloads etc.)
+    // ---- Folder resolution ----
     let root = resolve_folder_hint(&action.folder_hint, &action.query);
     println!("Searching in: {}", root.display());
 
-    // Walk filesystem (used for time filter; semantic matches will come from DB)
+    // Walk filesystem (for filtering only)
     let mut files = Vec::new();
     walk(&root, &mut files);
 
-    // time filter (optional)
     if let Some(time) = &action.time_filter {
         files.retain(|p| file_matches_time(p, time));
     }
 
-    // --- semantic ---
+    // ---- Load embeddings ----
     let db = VectorDB::new("meow_vectors.db")?;
 
     println!("Generating query embedding...");
@@ -80,9 +81,7 @@ fn execute_search(action: AiAction) -> anyhow::Result<SearchResults> {
     let mut vectors = db.load_all()?;
     println!("Loaded {} vectors from DB", vectors.len());
 
-    // IMPORTANT: if you want semantic to respect the chosen root/time-filter,
-    // filter DB vectors to only those file paths in `files`.
-    // (Otherwise it will rank ALL indexed files.)
+    // Restrict vectors to files under selected root
     if !files.is_empty() {
         use std::collections::HashSet;
         let allowed: HashSet<String> = files
@@ -92,29 +91,92 @@ fn execute_search(action: AiAction) -> anyhow::Result<SearchResults> {
         vectors.retain(|(path, _)| allowed.contains(path));
     }
 
-    // score
+    // ---- Score (semantic only; hybrid already handled elsewhere if needed) ----
     let mut scored: Vec<(String, f32)> = vectors
         .into_iter()
         .map(|(path, vec)| {
-            let semantic = cosine_similarity(&query_vec, &vec);
-            (path, if semantic.is_nan() { 0.0 } else { semantic })
+            let s = cosine_similarity(&query_vec, &vec);
+            (path, if s.is_nan() { 0.0 } else { s })
         })
         .collect();
 
+    if scored.is_empty() {
+        println!("No matches found.");
+        return Ok(SearchResults { items: vec![] });
+    }
+
     scored.sort_by(|a, b| b.1.total_cmp(&a.1));
 
-    // top 10
+    // ---- Build candidates (max 10) ----
     let top = scored.into_iter().take(10).collect::<Vec<_>>();
 
-    println!("\nTop matches:");
+    let candidates: Vec<Candidate> = top
+        .iter()
+        .enumerate()
+        .map(|(i, (path, score))| {
+            let p = std::path::Path::new(path);
+
+            Candidate {
+                idx: i + 1,
+                path: path.clone(),
+                file_name: p.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or(path)
+                    .to_string(),
+                ext: p.extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("")
+                    .to_lowercase(),
+                folder: p.parent()
+                    .and_then(|pp| pp.file_name())
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("")
+                    .to_string(),
+                score: *score,
+            }
+        })
+        .collect();
+
+    // ---- Decide if second AI should be used ----
+    let mut sure_pick: Option<usize> = None;
+
+    if candidates.len() >= 2 {
+        let best = candidates[0].score;
+        let second = candidates[1].score;
+
+        let ambiguous = best < 0.75 && (best - second) < 0.08;
+
+        if ambiguous {
+            sure_pick = decide_best(raw_query, &candidates).ok().flatten();
+        }
+    }
+
+    // ---- Output & result ordering ----
     let mut items = Vec::new();
-    for (i, (path, score)) in top.iter().enumerate() {
-        println!("[{}] {:.4} → {}", i + 1, score, path);
-        items.push(path.clone());
+
+    if let Some(idx) = sure_pick {
+        let picked = &candidates[idx - 1];
+        println!("\n🎯 Best match (AI confirmed):");
+        println!("★ {:.4} → {}", picked.score, picked.path);
+
+        // Ensure sure-shot is first (open 1)
+        items.push(picked.path.clone());
+    }
+
+    println!("\n😼 Results:");
+    for c in &candidates {
+        // Skip duplicate if already added as sure-shot
+        if sure_pick == Some(c.idx) {
+            continue;
+        }
+
+        println!("[{}] {:.4} → {}", c.idx, c.score, c.path);
+        items.push(c.path.clone());
     }
 
     Ok(SearchResults { items })
 }
+
 
 fn clean_query(q: &str) -> String {
     let stopwords = [

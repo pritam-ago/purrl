@@ -128,11 +128,14 @@ fn build_representation(path: &Path) -> anyhow::Result<String> {
             if file_name.contains("logo") {
                 text.push_str("It is likely a logo image. ");
             }
-            if file_name.contains("screenshot") {
+            if file_name.contains("screenshot") {   
                 text.push_str("It may be a screenshot. ");
             }
             if file_name.contains("icon") {
                 text.push_str("It may be an icon or logo. ");
+            }
+            if file_name.contains("wallpaper") {
+                text.push_str("It may be a wallpaper or background image. ");
             }
         }
 

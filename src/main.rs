@@ -6,6 +6,7 @@ mod vector_db;
 mod similarity;
 mod indexer;
 mod types;
+mod ai_decider;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
