@@ -10,10 +10,10 @@ use chrono::{Duration, Local};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub fn execute_action(action: AiAction) -> anyhow::Result<Option<SearchResults>> {
+pub fn execute_action(action: AiAction, db_path: &Path) -> anyhow::Result<Option<SearchResults>> {
     match action.intent.as_str() {
         "search" | "find" => {
-            let res = execute_search(action)?;
+            let res = execute_search(action, db_path)?;
             Ok(Some(res))
         }
         "open" => {
@@ -39,7 +39,7 @@ pub fn execute_action(action: AiAction) -> anyhow::Result<Option<SearchResults>>
     }
 }
 
-fn execute_search(action: AiAction) -> anyhow::Result<SearchResults> {
+fn execute_search(action: AiAction, db_path: &Path) -> anyhow::Result<SearchResults> {
     println!("Executing AI search...");
 
     // ---- Guard: query must exist ----
@@ -72,7 +72,7 @@ fn execute_search(action: AiAction) -> anyhow::Result<SearchResults> {
     }
 
     // ---- Load embeddings ----
-    let db = VectorDB::new("meow_vectors.db")?;
+    let db = VectorDB::new(db_path)?;
 
     println!("Generating query embedding...");
     let query_vec = embed_text(&final_query)?;

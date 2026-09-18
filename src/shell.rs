@@ -6,6 +6,7 @@ use crate::engine::execute_action;
 use crate::indexer::run_indexer;
 use crate::types::SearchResults;
 
+use std::path::Path;
 use std::process::Command;
 
 fn print_banner() {
@@ -60,7 +61,7 @@ fn clear_terminal() {
     }
 }
 
-pub fn run_shell() -> Result<()> {
+pub fn run_shell(db_path: &Path) -> Result<()> {
     let mut last_results: Option<SearchResults> = None;
     let mut rl = DefaultEditor::new()?;
 
@@ -95,7 +96,7 @@ pub fn run_shell() -> Result<()> {
                 // Index
                 if matches!(input, "index" | "reindex") {
                     println!("Building semantic index…");
-                    match run_indexer() {
+                    match run_indexer(db_path) {
                         Ok(_) => println!("Indexing finished.\n"),
                         Err(e) => println!("Indexing failed: {e}"),
                     }
@@ -138,7 +139,7 @@ pub fn run_shell() -> Result<()> {
                         Ok(action) => {
                             println!("AI interpreted:\n{:#?}", action);
 
-                            match execute_action(action) {
+                            match execute_action(action, db_path) {
                                 Ok(Some(results)) => {
                                     last_results = Some(results);
                                 }

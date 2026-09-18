@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use indicatif::{ProgressBar, ProgressStyle};
 
 
-pub fn run_indexer() -> anyhow::Result<()> {
+pub fn run_indexer(db_path: &Path) -> anyhow::Result<()> {
     println!("purrl indexer started…");
 
     let mut roots = Vec::new();
@@ -26,7 +26,7 @@ pub fn run_indexer() -> anyhow::Result<()> {
         }
     }
 
-    let db = VectorDB::new("meow_vectors.db")?;
+    let db = VectorDB::new(db_path)?;
 
     let mut files = Vec::new();
     for root in &roots {

@@ -1,15 +1,16 @@
-mod shell;
 mod ai;
-mod engine;
-mod embedding;
-mod vector_db;
-mod similarity;
-mod indexer;
-mod types;
 mod ai_decider;
+mod embedding;
+mod engine;
+mod indexer;
+mod shell;
+mod similarity;
+mod types;
+mod vector_db;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 /// purrl — AI-augmented filesystem shell (MVP)
 #[derive(Parser, Debug)]
@@ -20,6 +21,10 @@ use clap::{Parser, Subcommand};
     long_about = None
 )]
 struct Cli {
+    /// Path to the vector index. Defaults to <data_dir>/purrl/vectors.db.
+    #[arg(long, global = true, value_name = "PATH")]
+    db: Option<PathBuf>,
+
     /// Optional subcommand. If omitted, starts the interactive purrl shell.
     #[command(subcommand)]
     command: Option<Commands>,
@@ -42,16 +47,19 @@ enum Commands {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    let db_path = vector_db::resolve_db_path(cli.db)?;
+    vector_db::legacy_db_notice(&db_path);
+
     match cli.command {
         Some(Commands::Shell) | None => {
             // Default is interactive shell
-            shell::run_shell()?;
+            shell::run_shell(&db_path)?;
         }
         Some(Commands::Hello { name }) => {
             println!("Purrl, {name}!");
         }
         Some(Commands::Index) => {
-            indexer::run_indexer()?;
+            indexer::run_indexer(&db_path)?;
         }
     }
 
