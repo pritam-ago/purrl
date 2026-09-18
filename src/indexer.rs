@@ -12,7 +12,10 @@ pub fn run_indexer(db_path: &Path) -> anyhow::Result<()> {
 
     if let Some(home) = dirs::home_dir() {
         let downloads = home.join("Downloads");
-        let pictures = home.join("OneDrive/Pictures");
+        // Two joins, not one. home.join("OneDrive/Pictures") produces
+        // C:\Users\...\OneDrive/Pictures on Windows, and that mixed separator
+        // is what every path in the old index was stored with.
+        let pictures = home.join("OneDrive").join("Pictures");
 
         if downloads.exists() {
             println!("➡ Indexing Downloads: {}", downloads.display());
