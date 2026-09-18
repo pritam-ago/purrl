@@ -1,5 +1,5 @@
 use anyhow::Result;
-use rustyline::{error::ReadlineError, DefaultEditor};
+use rustyline::{DefaultEditor, error::ReadlineError};
 
 use crate::ai::interpret_command;
 use crate::engine::execute_action;
@@ -23,7 +23,6 @@ fn print_banner() {
 "#
     );
 }
-
 
 pub fn open_path(path: &str) -> Result<()> {
     #[cfg(target_os = "windows")]
@@ -49,10 +48,7 @@ pub fn open_path(path: &str) -> Result<()> {
 fn clear_terminal() {
     #[cfg(target_os = "windows")]
     {
-        Command::new("cmd")
-            .args(["/C", "cls"])
-            .status()
-            .unwrap();
+        Command::new("cmd").args(["/C", "cls"]).status().unwrap();
     }
 
     #[cfg(not(target_os = "windows"))]
@@ -114,10 +110,7 @@ pub fn run_shell(db_path: &Path) -> Result<()> {
                         };
 
                         if n == 0 || n > results.items.len() {
-                            println!(
-                                "Invalid index. Choose 1..{}",
-                                results.items.len()
-                            );
+                            println!("Invalid index. Choose 1..{}", results.items.len());
                             continue;
                         }
 

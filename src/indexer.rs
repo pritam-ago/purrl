@@ -1,10 +1,9 @@
 use crate::embedding::embed_text;
 use crate::vector_db::VectorDB;
 use chrono::Local;
+use indicatif::{ProgressBar, ProgressStyle};
 use std::fs;
 use std::path::{Path, PathBuf};
-use indicatif::{ProgressBar, ProgressStyle};
-
 
 pub fn run_indexer(db_path: &Path) -> anyhow::Result<()> {
     println!("purrl indexer started…");
@@ -60,7 +59,6 @@ pub fn run_indexer(db_path: &Path) -> anyhow::Result<()> {
     }
 
     pb.finish_with_message("Indexing complete");
-
 
     println!("Indexed {} files.", indexed);
     Ok(())
@@ -128,7 +126,7 @@ fn build_representation(path: &Path) -> anyhow::Result<String> {
             if file_name.contains("logo") {
                 text.push_str("It is likely a logo image. ");
             }
-            if file_name.contains("screenshot") {   
+            if file_name.contains("screenshot") {
                 text.push_str("It may be a screenshot. ");
             }
             if file_name.contains("icon") {
@@ -157,7 +155,6 @@ fn build_representation(path: &Path) -> anyhow::Result<String> {
     Ok(text)
 }
 
-
 // build_representation only parses paths -- it never opens the file -- so
 // these tests need neither Ollama nor a filesystem.
 #[cfg(test)]
@@ -182,8 +179,10 @@ mod tests {
 
     #[test]
     fn underscores_hyphens_and_dots_become_spaces() {
-        let text = build_representation(Path::new("/home/ada/Downloads/ubuntu-24.04.desktop_amd64.iso"))
-            .unwrap();
+        let text = build_representation(Path::new(
+            "/home/ada/Downloads/ubuntu-24.04.desktop_amd64.iso",
+        ))
+        .unwrap();
 
         assert!(text.contains("named ubuntu 24 04 desktop amd64 "), "{text}");
     }
@@ -214,7 +213,8 @@ mod tests {
             .unwrap();
         assert!(shot.contains("may be a screenshot"), "{shot}");
 
-        let paper = build_representation(Path::new("/home/ada/Pictures/wallpaper-blue.jpg")).unwrap();
+        let paper =
+            build_representation(Path::new("/home/ada/Pictures/wallpaper-blue.jpg")).unwrap();
         assert!(paper.contains("wallpaper or background image"), "{paper}");
 
         let icon = build_representation(Path::new("/home/ada/Pictures/app_icon.webp")).unwrap();
@@ -227,7 +227,10 @@ mod tests {
         assert!(md.contains("This file is a text document."), "{md}");
 
         let exe = build_representation(Path::new("/home/ada/Downloads/setup.exe")).unwrap();
-        assert!(exe.contains("This file is an installer or application."), "{exe}");
+        assert!(
+            exe.contains("This file is an installer or application."),
+            "{exe}"
+        );
     }
 
     #[test]
@@ -256,7 +259,10 @@ mod tests {
     fn a_file_with_no_parent_folder_reports_an_empty_folder() {
         let text = build_representation(Path::new("loose.txt")).unwrap();
 
-        assert!(text.starts_with("This is a txt file named loose located in  folder."), "{text}");
+        assert!(
+            text.starts_with("This is a txt file named loose located in  folder."),
+            "{text}"
+        );
     }
 
     #[cfg(windows)]
@@ -281,7 +287,10 @@ mod tests {
         // whole Windows prefix and the "name" keeps the Pictures component.
         // This is what an index built on Windows and read on Linux would mean.
         assert!(text.contains(r"named Pictures\logo icon "), "{text}");
-        assert!(text.contains(r"located in C:\Users\ada\OneDrive folder"), "{text}");
+        assert!(
+            text.contains(r"located in C:\Users\ada\OneDrive folder"),
+            "{text}"
+        );
         assert!(text.starts_with("This is a png file"), "{text}");
     }
 

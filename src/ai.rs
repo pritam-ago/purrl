@@ -4,9 +4,9 @@ use serde_json::json;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AiAction {
-    pub intent: String,            // "search" or "open"
-    pub query: Option<String>,     // text extracted from user input
-    pub file_type: Option<String>, // "pdf", "image", "text", etc.
+    pub intent: String,              // "search" or "open"
+    pub query: Option<String>,       // text extracted from user input
+    pub file_type: Option<String>,   // "pdf", "image", "text", etc.
     pub time_filter: Option<String>, // "yesterday", "last week", etc.
     pub folder_hint: Option<String>, // "downloads", "documents", etc.
 }
@@ -48,10 +48,7 @@ Respond in JSON ONLY. Example:
         .send()?
         .json::<serde_json::Value>()?;
 
-    let text_output = response["response"]
-        .as_str()
-        .unwrap_or("{}")
-        .trim();
+    let text_output = response["response"].as_str().unwrap_or("{}").trim();
 
     let parsed: AiAction = serde_json::from_str(text_output)?;
 

@@ -5,7 +5,7 @@ use serde_json::json;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Candidate {
-    pub idx: usize,          // 1-based index
+    pub idx: usize, // 1-based index
     pub path: String,
     pub file_name: String,
     pub ext: String,
@@ -15,8 +15,8 @@ pub struct Candidate {
 
 #[derive(Debug, Clone, Deserialize)]
 struct DeciderResponse {
-    choice: Option<usize>,   // 1..N OR null
-    confidence: f32,         // 0.0 .. 1.0
+    choice: Option<usize>, // 1..N OR null
+    confidence: f32,       // 0.0 .. 1.0
 }
 
 pub fn decide_best(query: &str, candidates: &[Candidate]) -> Result<Option<usize>> {

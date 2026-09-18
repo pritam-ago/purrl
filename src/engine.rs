@@ -1,11 +1,10 @@
 use crate::ai::AiAction;
+use crate::ai_decider::{Candidate, decide_best};
 use crate::embedding::embed_text;
+use crate::shell::open_path;
 use crate::similarity::cosine_similarity;
 use crate::types::SearchResults;
 use crate::vector_db::VectorDB;
-use crate::ai_decider::{decide_best, Candidate};
-use crate::shell::open_path;
-
 
 use chrono::{Duration, Local};
 use std::fs;
@@ -38,9 +37,7 @@ pub fn execute_action(action: AiAction, db_path: &Path) -> anyhow::Result<Option
             Ok(None)
         }
         other => {
-            println!(
-                "purrl can't do '{other}'. Try `ai find <something>`, then `open <n>`."
-            );
+            println!("purrl can't do '{other}'. Try `ai find <something>`, then `open <n>`.");
             Ok(None)
         }
     }
@@ -153,7 +150,6 @@ fn execute_search(action: AiAction, db_path: &Path) -> anyhow::Result<SearchResu
     Ok(SearchResults { items })
 }
 
-
 /// Cosine similarity against every stored vector, NaN coerced to zero, best
 /// first. Lifted out of execute_search so it can be tested; the arithmetic is
 /// unchanged.
@@ -206,9 +202,24 @@ fn make_candidate(idx: usize, path: &str, score: f32) -> Candidate {
 
 fn clean_query(q: &str) -> String {
     let stopwords = [
-        "find", "the", "file", "that", "i", "downloaded", "download",
-        "yesterday", "today", "please", "can", "you", "my", "a", "an",
-        "is", "was", "me"
+        "find",
+        "the",
+        "file",
+        "that",
+        "i",
+        "downloaded",
+        "download",
+        "yesterday",
+        "today",
+        "please",
+        "can",
+        "you",
+        "my",
+        "a",
+        "an",
+        "is",
+        "was",
+        "me",
     ];
 
     q.split_whitespace()
@@ -531,16 +542,13 @@ mod tests {
     #[test]
     fn the_folder_is_inferred_from_the_query_when_no_hint_is_given() {
         assert!(
-            resolve_folder_hint(&None, &Some("the iso I downloaded".into()))
-                .ends_with("Downloads")
+            resolve_folder_hint(&None, &Some("the iso I downloaded".into())).ends_with("Downloads")
         );
         assert!(
-            resolve_folder_hint(&None, &Some("that photo of the cat".into()))
-                .ends_with("Pictures")
+            resolve_folder_hint(&None, &Some("that photo of the cat".into())).ends_with("Pictures")
         );
         assert!(
-            resolve_folder_hint(&None, &Some("my profile picture".into()))
-                .ends_with("Pictures")
+            resolve_folder_hint(&None, &Some("my profile picture".into())).ends_with("Pictures")
         );
         assert!(resolve_folder_hint(&None, &Some("a nice image".into())).ends_with("Pictures"));
     }

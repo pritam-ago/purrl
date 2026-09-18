@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use std::path::{Path, PathBuf};
 
 /// Name of the index file inside the data directory.
@@ -15,7 +15,9 @@ const LEGACY_DB_FILE_NAME: &str = "meow_vectors.db";
 pub fn default_db_path() -> anyhow::Result<PathBuf> {
     let dir = dirs::data_dir()
         .ok_or_else(|| {
-            anyhow::anyhow!("could not determine a data directory for this platform; pass --db <PATH>")
+            anyhow::anyhow!(
+                "could not determine a data directory for this platform; pass --db <PATH>"
+            )
         })?
         .join("purrl");
 
@@ -254,7 +256,12 @@ mod tests {
     #[test]
     fn an_explicit_db_flag_gets_its_parent_directory_created() {
         let dir = TempDir::new().unwrap();
-        let wanted = dir.path().join("does").join("not").join("exist").join("x.db");
+        let wanted = dir
+            .path()
+            .join("does")
+            .join("not")
+            .join("exist")
+            .join("x.db");
 
         let resolved = resolve_db_path(Some(wanted.clone())).unwrap();
 
