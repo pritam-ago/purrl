@@ -43,8 +43,8 @@ dependency raises it to 1.88.
 ## Install
 
 ```bash
-git clone https://github.com/pritam-ago/meow-cli.git
-cd meow-cli
+git clone https://github.com/pritam-ago/purrl.git
+cd purrl
 cargo build --release
 ```
 
