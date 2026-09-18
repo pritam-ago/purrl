@@ -30,10 +30,8 @@ pub fn default_db_path() -> anyhow::Result<PathBuf> {
 pub fn resolve_db_path(flag: Option<PathBuf>) -> anyhow::Result<PathBuf> {
     match flag {
         Some(path) => {
-            if let Some(parent) = path.parent() {
-                if !parent.as_os_str().is_empty() {
-                    std::fs::create_dir_all(parent)?;
-                }
+            if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+                std::fs::create_dir_all(parent)?;
             }
             Ok(path)
         }

@@ -267,24 +267,24 @@ fn resolve_folder_hint(hint: &Option<String>, query: &Option<String>) -> PathBuf
 }
 
 fn file_matches_time(path: &PathBuf, filter: &str) -> bool {
-    if let Ok(meta) = fs::metadata(path) {
-        if let Ok(modified) = meta.modified() {
-            let modified_dt = chrono::DateTime::<Local>::from(modified);
-            let now = Local::now();
+    let Ok(meta) = fs::metadata(path) else {
+        return false;
+    };
+    let Ok(modified) = meta.modified() else {
+        return false;
+    };
 
-            match filter {
-                "yesterday" => {
-                    let y = now - Duration::days(1);
-                    return modified_dt.date_naive() == y.date_naive();
-                }
-                "today" => {
-                    return modified_dt.date_naive() == now.date_naive();
-                }
-                _ => return true,
-            }
+    let modified_dt = chrono::DateTime::<Local>::from(modified);
+    let now = Local::now();
+
+    match filter {
+        "yesterday" => {
+            let y = now - Duration::days(1);
+            modified_dt.date_naive() == y.date_naive()
         }
+        "today" => modified_dt.date_naive() == now.date_naive(),
+        _ => true,
     }
-    false
 }
 
 // These cover the pure ranking logic only. Nothing here talks to Ollama:
@@ -317,7 +317,7 @@ mod tests {
         assert_eq!(names, vec!["exact", "diagonal", "orthogonal"]);
 
         assert!((ranked[0].1 - 1.0).abs() < EPS);
-        assert!((ranked[1].1 - 0.707_106_8).abs() < 1e-4);
+        assert!((ranked[1].1 - std::f32::consts::FRAC_1_SQRT_2).abs() < 1e-4);
         assert!(ranked[2].1.abs() < EPS);
     }
 
@@ -434,8 +434,10 @@ mod tests {
         // just under the threshold, so that pair is ambiguous despite looking
         // like an exact 0.08 gap. Pinned because it is exactly the sort of
         // edge a later refactor would move without noticing.
-        assert!((0.70_f32 - 0.62_f32) < 0.08);
-        assert!(is_ambiguous(0.70, 0.62));
+        let best = 0.70_f32;
+        let second = 0.62_f32;
+        assert!(best - second < 0.08, "gap is {}", best - second);
+        assert!(is_ambiguous(best, second));
 
         // Clear of the threshold in either direction.
         assert!(!is_ambiguous(0.70, 0.61));

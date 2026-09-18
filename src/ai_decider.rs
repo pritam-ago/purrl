@@ -78,13 +78,10 @@ pub fn decide_best(query: &str, candidates: &[Candidate]) -> Result<Option<usize
         return Ok(None);
     }
 
-    if let Some(choice) = parsed.choice {
-        if choice >= 1 && choice <= candidates.len() {
-            return Ok(Some(choice));
-        }
+    match parsed.choice {
+        Some(choice) if (1..=candidates.len()).contains(&choice) => Ok(Some(choice)),
+        _ => Ok(None),
     }
-
-    Ok(None)
 }
 
 fn extract_json_object(s: &str) -> Option<String> {
