@@ -12,10 +12,16 @@ git checkout -b feat/my-feature
 ```
 
 4. Make your changes
-5. Run tests / build:
+5. Build, test and lint -- the same four commands CI runs:
 ```bash
 cargo build
+cargo test
+cargo clippy --all-targets -- -D warnings
+cargo fmt --all --check
 ```
+
+`cargo test` does not need Ollama running. Please keep it that way: tests
+that require a live server will not run in CI.
 
 6. Commit and push
 7. Open a Pull Request

@@ -41,6 +41,7 @@ enum Commands {
         #[arg(default_value = "human")]
         name: String,
     },
+    /// Build the semantic index over Downloads and Pictures
     Index,
 }
 
