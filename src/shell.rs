@@ -25,7 +25,7 @@ fn print_banner() {
 }
 
 
-fn open_path(path: &str) -> Result<()> {
+pub fn open_path(path: &str) -> Result<()> {
     #[cfg(target_os = "windows")]
     {
         Command::new("cmd")

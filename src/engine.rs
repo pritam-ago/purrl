@@ -4,6 +4,7 @@ use crate::similarity::cosine_similarity;
 use crate::types::SearchResults;
 use crate::vector_db::VectorDB;
 use crate::ai_decider::{decide_best, Candidate};
+use crate::shell::open_path;
 
 
 use chrono::{Duration, Local};
@@ -17,23 +18,29 @@ pub fn execute_action(action: AiAction, db_path: &Path) -> anyhow::Result<Option
             Ok(Some(res))
         }
         "open" => {
-            println!("(open not implemented yet)");
-            Ok(None)
-        }
-        "read" => {
-            println!("(read not implemented yet)");
-            Ok(None)
-        }
-        "summarize" => {
-            println!("(summarize not implemented yet)");
-            Ok(None)
+            // The natural end of a search: run the same search, then open the
+            // top result. execute_search already puts the AI-confirmed pick
+            // first when there is one.
+            let res = execute_search(action, db_path)?;
+
+            if let Some(best) = res.items.first() {
+                open_path(best)?;
+                println!("\nOpened: {best}");
+            }
+
+            Ok(Some(res))
         }
         "delete" => {
-            println!("(delete not implemented yet)");
+            // The intent is gone from the prompt, but llama3 is unconstrained
+            // and still emits it now and then. Answer it explicitly rather
+            // than letting a destructive request look like a parse failure.
+            println!("purrl finds files. It never deletes them.");
             Ok(None)
         }
-        _ => {
-            println!("Unknown intent: {}", action.intent);
+        other => {
+            println!(
+                "purrl can't do '{other}'. Try `ai find <something>`, then `open <n>`."
+            );
             Ok(None)
         }
     }

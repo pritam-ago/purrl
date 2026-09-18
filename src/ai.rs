@@ -4,7 +4,7 @@ use serde_json::json;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AiAction {
-    pub intent: String,            // "search", "open", "summarize", "delete", etc.
+    pub intent: String,            // "search" or "open"
     pub query: Option<String>,     // text extracted from user input
     pub file_type: Option<String>, // "pdf", "image", "text", etc.
     pub time_filter: Option<String>, // "yesterday", "last week", etc.
@@ -20,7 +20,7 @@ pub fn interpret_command(input: &str) -> anyhow::Result<AiAction> {
 User input: "{input}"
 
 Extract:
-- intent (one of: search, open, read, summarize, delete)
+- intent (one of: search, open)
 - query (keywords to search for)
 - file_type (optional)
 - time_filter (optional)
