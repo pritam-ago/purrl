@@ -104,3 +104,171 @@ impl VectorDB {
         Ok(results)
     }
 }
+
+// Every test here runs against its own TempDir. None of them call
+// default_db_path(), so the real data directory is never touched, and none of
+// them need Ollama.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    fn temp_db() -> (TempDir, VectorDB) {
+        let dir = TempDir::new().expect("temp dir");
+        let db = VectorDB::new(&dir.path().join("vectors.db")).expect("open db");
+        (dir, db)
+    }
+
+    #[test]
+    fn a_vector_survives_the_round_trip_exactly() {
+        let (_dir, db) = temp_db();
+
+        let vector = vec![0.1, -0.2, 0.000_003, 1.0, -1.0, f32::MIN_POSITIVE];
+        db.store_embedding("/home/ada/Downloads/report.pdf", &vector, 1_700_000_000)
+            .unwrap();
+
+        let loaded = db.load_all().unwrap();
+
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded[0].0, "/home/ada/Downloads/report.pdf");
+        // Exact equality, not approximate: bincode round-trips the f32 bits.
+        assert_eq!(loaded[0].1, vector);
+    }
+
+    #[test]
+    fn a_full_width_embedding_round_trips() {
+        let (_dir, db) = temp_db();
+
+        // 768 is what nomic-embed-text actually returns.
+        let vector: Vec<f32> = (0..768).map(|i| i as f32 * 0.001).collect();
+        db.store_embedding("/home/ada/Pictures/cat.png", &vector, 0)
+            .unwrap();
+
+        let loaded = db.load_all().unwrap();
+        assert_eq!(loaded[0].1.len(), 768);
+        assert_eq!(loaded[0].1, vector);
+    }
+
+    #[test]
+    fn reindexing_a_path_replaces_it_instead_of_duplicating_it() {
+        let (_dir, db) = temp_db();
+
+        db.store_embedding("/home/ada/Downloads/a.pdf", &[1.0, 2.0], 1)
+            .unwrap();
+        db.store_embedding("/home/ada/Downloads/a.pdf", &[9.0, 9.0], 2)
+            .unwrap();
+
+        let loaded = db.load_all().unwrap();
+
+        assert_eq!(loaded.len(), 1, "path is the primary key");
+        assert_eq!(loaded[0].1, vec![9.0, 9.0]);
+    }
+
+    #[test]
+    fn several_files_are_all_returned() {
+        let (_dir, db) = temp_db();
+
+        for i in 0..5 {
+            db.store_embedding(&format!("/home/ada/f{i}.txt"), &[i as f32], i as i64)
+                .unwrap();
+        }
+
+        let loaded = db.load_all().unwrap();
+        assert_eq!(loaded.len(), 5);
+
+        let mut paths: Vec<String> = loaded.into_iter().map(|(p, _)| p).collect();
+        paths.sort();
+        assert_eq!(paths[0], "/home/ada/f0.txt");
+        assert_eq!(paths[4], "/home/ada/f4.txt");
+    }
+
+    #[test]
+    fn a_fresh_index_is_empty_rather_than_missing() {
+        let (_dir, db) = temp_db();
+        assert!(db.load_all().unwrap().is_empty());
+    }
+
+    #[test]
+    fn an_empty_vector_round_trips() {
+        let (_dir, db) = temp_db();
+
+        db.store_embedding("/home/ada/weird.bin", &[], 0).unwrap();
+
+        let loaded = db.load_all().unwrap();
+        assert_eq!(loaded.len(), 1);
+        assert!(loaded[0].1.is_empty());
+    }
+
+    #[test]
+    fn windows_paths_survive_storage_verbatim() {
+        let (_dir, db) = temp_db();
+
+        // The exact shape found in the committed index: a path built by
+        // joining "OneDrive/Pictures" onto a Windows home directory.
+        let path = r"C:\Users\ada\OneDrive/Pictures\logo_icon.png";
+        db.store_embedding(path, &[0.5, 0.5], 0).unwrap();
+
+        let loaded = db.load_all().unwrap();
+        assert_eq!(loaded[0].0, path, "separators must not be normalised");
+    }
+
+    #[test]
+    fn reopening_the_same_file_keeps_the_data() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("vectors.db");
+
+        {
+            let db = VectorDB::new(&path).unwrap();
+            db.store_embedding("/home/ada/persisted.txt", &[1.0, 2.0, 3.0], 42)
+                .unwrap();
+        }
+
+        let reopened = VectorDB::new(&path).unwrap();
+        let loaded = reopened.load_all().unwrap();
+
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded[0].1, vec![1.0, 2.0, 3.0]);
+    }
+
+    #[test]
+    fn opening_creates_the_file_where_it_was_asked_to() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("nested").join("vectors.db");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+
+        let _db = VectorDB::new(&path).unwrap();
+
+        assert!(path.exists(), "index should exist at {}", path.display());
+    }
+
+    #[test]
+    fn an_explicit_db_flag_is_used_verbatim() {
+        let dir = TempDir::new().unwrap();
+        let wanted = dir.path().join("custom.db");
+
+        let resolved = resolve_db_path(Some(wanted.clone())).unwrap();
+
+        assert_eq!(resolved, wanted);
+    }
+
+    #[test]
+    fn an_explicit_db_flag_gets_its_parent_directory_created() {
+        let dir = TempDir::new().unwrap();
+        let wanted = dir.path().join("does").join("not").join("exist").join("x.db");
+
+        let resolved = resolve_db_path(Some(wanted.clone())).unwrap();
+
+        assert_eq!(resolved, wanted);
+        assert!(wanted.parent().unwrap().is_dir());
+        // Resolving prepares the directory; it does not create the index.
+        assert!(!wanted.exists());
+    }
+
+    #[test]
+    fn a_bare_filename_flag_does_not_panic_on_an_empty_parent() {
+        // Path::parent() of "x.db" is Some(""), which create_dir_all would
+        // choke on. Guarded, so this must simply pass the name through.
+        let resolved = resolve_db_path(Some(PathBuf::from("x.db"))).unwrap();
+        assert_eq!(resolved, PathBuf::from("x.db"));
+    }
+}
