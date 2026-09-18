@@ -93,13 +93,20 @@ impl VectorDB {
         let rows = stmt.query_map([], |row| {
             let path: String = row.get(0)?;
             let blob: Vec<u8> = row.get(1)?;
-            let vector: Vec<f32> = bincode::deserialize(&blob).unwrap();
-            Ok((path, vector))
+            Ok((path, blob))
         })?;
 
         let mut results = Vec::new();
         for r in rows {
-            results.push(r?);
+            let (path, blob) = r?;
+
+            // A row written by an older build, or a half-written one, used to
+            // panic the whole search from inside the sqlite callback. Skip it
+            // and say so: one bad row should cost one file, not the query.
+            match bincode::deserialize::<Vec<f32>>(&blob) {
+                Ok(vector) => results.push((path, vector)),
+                Err(e) => eprintln!("Skipping {path}: stored vector could not be read ({e})"),
+            }
         }
         Ok(results)
     }
@@ -267,6 +274,51 @@ mod tests {
         assert!(wanted.parent().unwrap().is_dir());
         // Resolving prepares the directory; it does not create the index.
         assert!(!wanted.exists());
+    }
+
+    #[test]
+    fn a_corrupt_row_costs_one_file_not_the_whole_search() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("vectors.db");
+
+        let db = VectorDB::new(&path).unwrap();
+        db.store_embedding("/home/ada/good.png", &[1.0, 2.0], 0)
+            .unwrap();
+
+        // Write a blob that is not a bincode-encoded Vec<f32>, the way an
+        // older build or an interrupted write would leave one behind.
+        let raw = rusqlite::Connection::open(&path).unwrap();
+        raw.execute(
+            "INSERT INTO embeddings (path, vector, modified) VALUES (?1, ?2, ?3)",
+            rusqlite::params!["/home/ada/corrupt.png", vec![0xde_u8, 0xad, 0xbe], 0_i64],
+        )
+        .unwrap();
+        drop(raw);
+
+        // This used to panic inside the sqlite callback and take the search
+        // with it.
+        let loaded = db.load_all().unwrap();
+
+        assert_eq!(loaded.len(), 1, "the good row should still come back");
+        assert_eq!(loaded[0].0, "/home/ada/good.png");
+    }
+
+    #[test]
+    fn every_row_being_corrupt_is_still_not_fatal() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("vectors.db");
+
+        let db = VectorDB::new(&path).unwrap();
+
+        let raw = rusqlite::Connection::open(&path).unwrap();
+        raw.execute(
+            "INSERT INTO embeddings (path, vector, modified) VALUES (?1, ?2, ?3)",
+            rusqlite::params!["/home/ada/corrupt.png", vec![0x00_u8], 0_i64],
+        )
+        .unwrap();
+        drop(raw);
+
+        assert!(db.load_all().unwrap().is_empty());
     }
 
     #[test]

@@ -60,6 +60,10 @@ pub fn decide_best(query: &str, candidates: &[Candidate]) -> Result<Option<usize
         .send()?
         .json()?;
 
+    if let Some(err) = crate::ai::ollama_error(&resp) {
+        anyhow::bail!("Ollama: {err}");
+    }
+
     // Ollama generate response usually has { "response": "..." }
     let raw = resp
         .get("response")

@@ -17,6 +17,10 @@ pub fn embed_text(text: &str) -> anyhow::Result<Vec<f32>> {
         .send()?
         .json()?;
 
+    if let Some(err) = crate::ai::ollama_error(&resp) {
+        anyhow::bail!("Ollama: {err}");
+    }
+
     // Case 1: { "embedding": [...] }
     if let Some(arr) = resp.get("embedding").and_then(|v| v.as_array()) {
         let vec: Vec<f32> = arr

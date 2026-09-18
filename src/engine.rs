@@ -120,7 +120,15 @@ fn execute_search(action: AiAction, db_path: &Path) -> anyhow::Result<SearchResu
         let second = candidates[1].score;
 
         if is_ambiguous(best, second) {
-            sure_pick = decide_best(raw_query, &candidates).ok().flatten();
+            sure_pick = match decide_best(raw_query, &candidates) {
+                Ok(pick) => pick,
+                Err(e) => {
+                    // The second opinion is optional, so a failure here is not
+                    // fatal -- but it should not be invisible either.
+                    println!("(tie-breaker unavailable: {e})");
+                    None
+                }
+            };
         }
     }
 
