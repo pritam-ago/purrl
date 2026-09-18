@@ -15,7 +15,7 @@ fn print_banner() {
              ( o o )  
     ┌───oOO───(___)───OOo───┐
     │                       │
-    │        meow-cli       │
+    │         purrl         │
     │      welcomes you     │
     │                       │
     └───oOO────────────OOo──┘
@@ -68,7 +68,7 @@ pub fn run_shell() -> Result<()> {
     println!("Type 'exit' or 'quit' to leave.\n");
 
     loop {
-        let line = rl.readline("meow> ");
+        let line = rl.readline("purrl> ");
 
         match line {
             Ok(input) => {
@@ -88,7 +88,7 @@ pub fn run_shell() -> Result<()> {
                 // Clear
                 if matches!(input, "clear" | "cls" | "clean") {
                     clear_terminal();
-                    println!("Meow shell refreshed.\n");
+                    println!("purrl shell refreshed.\n");
                     continue;
                 }
 

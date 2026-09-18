@@ -11,23 +11,23 @@ mod ai_decider;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-/// meow — AI-augmented filesystem shell (MVP)
+/// purrl — AI-augmented filesystem shell (MVP)
 #[derive(Parser, Debug)]
 #[command(
-    name = "meow",
+    name = "purrl",
     version,
     about = "A curious cat that explores your filesystem.",
     long_about = None
 )]
 struct Cli {
-    /// Optional subcommand. If omitted, starts interactive meow shell.
+    /// Optional subcommand. If omitted, starts the interactive purrl shell.
     #[command(subcommand)]
     command: Option<Commands>,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Start the interactive Meow shell
+    /// Start the interactive purrl shell
     Shell,
     /// Just print a one-off message (for testing)
     #[command(alias = "hi")]
@@ -48,7 +48,7 @@ fn main() -> Result<()> {
             shell::run_shell()?;
         }
         Some(Commands::Hello { name }) => {
-            println!("Meow, {name}!");
+            println!("Purrl, {name}!");
         }
         Some(Commands::Index) => {
             indexer::run_indexer()?;

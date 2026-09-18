@@ -7,7 +7,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 
 pub fn run_indexer() -> anyhow::Result<()> {
-    println!("Meow indexer started…");
+    println!("purrl indexer started…");
 
     let mut roots = Vec::new();
 

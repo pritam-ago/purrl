@@ -1,11 +1,11 @@
 [package]
-name = "meow-cli"
+name = "purrl"
 version = "0.1.0"
 edition = "2024"
 
-# This makes the installed binary name just `meow`
+# Installed binary is `purrl`
 [[bin]]
-name = "meow"
+name = "purrl"
 path = "src/main.rs"
 
 [dependencies]

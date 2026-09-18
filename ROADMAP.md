@@ -1,4 +1,4 @@
-# 🛣️ meow-cli Roadmap
+# 🛣️ purrl Roadmap
 
 ## v0.1 (Current)
 - [x] Semantic file search

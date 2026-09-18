@@ -1,15 +1,17 @@
-# meow-cli
+# purrl
+
+**Previously meow-cli.**
 
 **Ask your terminal questions about your files.**
 
-`meow-cli` is a local-first, AI-powered command-line tool that understands your filesystem.
+`purrl` is a local-first, AI-powered command-line tool that understands your filesystem.
 Instead of remembering filenames or paths, you can search using natural language.
 
 ```bash
-meow> ai find the qrcode I downloaded
-meow> ai find my logo image
-meow> ai find ubuntu iso
-meow> open 1
+purrl> ai find the qrcode I downloaded
+purrl> ai find my logo image
+purrl> ai find ubuntu iso
+purrl> open 1
 ```
 
 No cloud. No API keys. Fully local.
@@ -21,7 +23,7 @@ No cloud. No API keys. Fully local.
 - Semantic search over your files (meaning > filenames)
 - Hybrid ranking (semantic + filename + learning)
 - Interactive CLI with selection & open
-- Implicit learning (meow learns what you pick)
+- Implicit learning (purrl learns what you pick)
 - Privacy-first (runs locally with Ollama)
 - Fast & lightweight (Rust)
 
@@ -39,7 +41,7 @@ ollama pull nomic-embed-text
 
 ### Build from source
 ```bash
-git clone https://github.com/your-username/meow-cli.git
+git clone https://github.com/pritam-ago/meow-cli.git
 cd meow-cli
 cargo build --release
 ```
@@ -54,9 +56,9 @@ cargo run
 ## 🧪 Usage
 
 ```bash
-meow> index
-meow> ai find logo image
-meow> open 1
+purrl> index
+purrl> ai find logo image
+purrl> open 1
 ```
 
 Commands:

@@ -1,4 +1,4 @@
-# Contributing to meow-cli
+# Contributing to purrl
 
 Thanks for your interest in contributing! 
 
